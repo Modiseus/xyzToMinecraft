@@ -15,16 +15,57 @@ import os
 class Point:
     def __init__(self, x, y, z, r, g, b, i, c):
         self.x = float(x)
-        self.y = float(z)
-        self.z = -float(y)
+        self.y = float(y)
+        self.z = float(z)
         self.r = int(r)
         self.g = int(g)
         self.b = int(b)
         self.i = int(i)
         self.c = int(c)
 
+    def to_minecraft_coordinates(self):
+        y = self.y
+        self.y = self.z
+        self.z = -y
+
     def __repr__(self):
         return f"Point(x={self.x}, y={self.y}, z={self.z}, r={self.r}, g={self.g}, b={self.b})"
+
+def fill_up_walls(points, box, x_range, y_range, z_range):
+    # find any points in the point cloud which has the same x,y coordinates
+    points_filled = points.copy()
+    
+    # THIS WORKED
+    # for point in points: 
+    #    for y in range(int(box.min_y), int(point.y)):
+    #        points_filled.append(Point(point.x, y, point.z, point.r, point.g, point.b, point.i, point.c))
+
+    for x, z in zip(range(int(box.min_x), int(box.min_x + x_range[1] - x_range[0] + 1)), range(int(box.min_z), int(box.min_z + z_range[1] - z_range[0] + 1))):
+        matching_xz_points = []
+        for point in points:
+            if int(point.x) == x and int(point.z) == z:
+                matching_xz_points.append(point)
+            print("mathing points",  matching_xz_points)
+        if len(matching_xz_points) > 0:
+            minYValue = np.min([point.y for point in matching_xz_points])
+            for y in range(int(box.min_y), int(minYValue)+1):
+                points_filled.append(Point(point.x, y, point.z, point.r, point.g, point.b, point.i, point.c))
+    """
+    for x, z in zip(range(int(box.min_x), int(box.min_x + x_range[1] - x_range[0] + 1)), range(int(box.min_z), int(box.min_z + z_range[1] - z_range[0] + 1))):
+        matching_xz_points = []
+        for point in points:
+            #if int(point.x) == x and int(point.z) == z:
+            #    matching_xz_points.append(point)
+            #print("mathing points",  matching_xz_points)
+        # add points to the point cloud if there are no other points on different z coordinates   
+        #unique_y_coord = np.unique([int(point.y) for point in matching_xz_points])
+        #print(unique_z_coord, point.z)
+        #if np.sum([unique_y_coord > int(point.y)]) == 0:     
+            for y in range(int(box.min_y), int(point.y)):
+                points_filled.append(Point(point.x, y, point.z, point.r, point.g, point.b, point.i, point.c))
+    print(f"Filled up walls number of points: {len(points_filled)} points.")
+    """
+    return points_filled
 
 
 def readXYZ():
@@ -37,7 +78,10 @@ def readXYZ():
     ) as file:
         for i, line in enumerate(file):
             parts = line.strip().split()
+            if i > 50000:
+                break
             point = Point(*parts)
+            point.to_minecraft_coordinates()
 
             x_vals.append(point.x)
             y_vals.append(point.y)
@@ -104,6 +148,8 @@ def xyz_to_minecraft(
     box = selection[0]
     toRelativeCoordinates(points, x_range, y_range, z_range, box)
 
+    points = fill_up_walls(points, box,  x_range, y_range, z_range)
+    print(f"Loaded after walls filled up: {len(points)} points.")
     placeBlocksSimple(points, selection, world, dimension)
 
     print("XYZ to Minecraft ended")
