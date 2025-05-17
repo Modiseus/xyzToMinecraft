@@ -40,7 +40,7 @@ def readXYZ():
     ) as file:
         for i, line in enumerate(file):
             parts = line.strip().split()
-            if i > 5000:
+            if i > 500000:
                 break
             point = Point(*parts)
             point.to_minecraft_coordinates()
@@ -70,11 +70,18 @@ def toRelativeCoordinates(points, x_range, y_range, z_range, box):
         point.y = int(point.y - y_range[0] + box.min_y)
         point.z = int(point.z - z_range[0] + box.min_z)
 
-
-def placeBlocksSimple(
-    points, selection: SelectionGroup, world: BaseLevel, dimension: Dimension, box
+def xyz_to_minecraft(
+    world: BaseLevel, dimension: Dimension, selection: SelectionGroup, options: dict
 ):
+    print("XYZ to Minecraft starting")
 
+    points, x_range, y_range, z_range = readXYZ()
+    box = selection[0]
+    toRelativeCoordinates(points, x_range, y_range, z_range, box)
+
+    print(f"Loaded after walls filled up: {len(points)} points.")
+
+    # place Blocks
     block_platform = "java"  # the platform the blocks below are defined in
     block_version = (1, 21, 5)  # the version the blocks below are defined in
     block_entity = None
@@ -89,11 +96,15 @@ def placeBlocksSimple(
     }
 
     columns = {}
+
     for point in points:
         if not (point.x, point.z) in columns:
             columns[(point.x, point.z)] = []
         columns[(point.x, point.z)].append(point)
 
+
+    columnCount = len(columns)
+    i = 0
     for (x,z), pointsInColumn in columns.items():
         lowestPoint = pointsInColumn[0]
         for point in pointsInColumn:
@@ -113,6 +124,10 @@ def placeBlocksSimple(
             if point.y < lowestPoint.y:
                 lowestPoint = point
 
+        blockType = "light_gray_wool"
+        if lowestPoint.c in classToBaseName:
+            blockType = classToBaseName[lowestPoint.c]
+
         # fill column below lowest point
         for y in range(int(box.min_y), int(lowestPoint.y)):
             world.set_version_block(
@@ -121,25 +136,14 @@ def placeBlocksSimple(
                                 int(lowestPoint.z),
                                 dimension,
                                 (block_platform, block_version),
-                                Block("minecraft", classToBaseName[lowestPoint.c], {}),
+                                Block("minecraft", blockType, {}),
                                 block_entity,
                             )
+        yield i/columnCount
+        i+=1
 
-
-def xyz_to_minecraft(
-    world: BaseLevel, dimension: Dimension, selection: SelectionGroup, options: dict
-):
-    print("XYZ to Minecraft starting")
-
-    points, x_range, y_range, z_range = readXYZ()
-    box = selection[0]
-    toRelativeCoordinates(points, x_range, y_range, z_range, box)
-
-    print(f"Loaded after walls filled up: {len(points)} points.")
-    placeBlocksSimple(points, selection, world, dimension, box)
 
     print("XYZ to Minecraft ended")
-
 
 operation_options = {}
 
