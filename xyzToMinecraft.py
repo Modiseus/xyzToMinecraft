@@ -11,14 +11,14 @@ import os
 
 
 class Point:
-    def __init__(self, x, y, z, r, g, b, i, c):
+    def __init__(self, x, y, z, c):
         self.x = float(x)
         self.y = float(y)
         self.z = float(z)
-        self.r = int(r)
-        self.g = int(g)
-        self.b = int(b)
-        self.i = int(i)
+#         self.r = int(r)
+#         self.g = int(g)
+#         self.b = int(b)
+#         self.i = int(i)
         self.c = int(c)
 
     def to_minecraft_coordinates(self):
@@ -40,8 +40,8 @@ def readXYZ():
     ) as file:
         for i, line in enumerate(file):
             parts = line.strip().split()
-#             if i > 50000:
-#                 break
+            if i > 5000:
+                break
             point = Point(*parts)
             point.to_minecraft_coordinates()
 
@@ -80,13 +80,12 @@ def placeBlocksSimple(
     block_entity = None
     classToBaseName = {
         1: "light_gray_wool",
-        2: "gray_wool",
-        5: "green_wool",
-        6: "granite",
-        7: "light_gray_wool",
-        8: "light_gray_wool",
-        9: "blue_wool",
-        17: "black_wool",
+        2: "gray_wool", # Boden
+        5: "green_wool", # Vegetation
+        6: "granite", # Gebäudedächer
+        8: "light_gray_wool", # Modelkeypoints
+        9: "water", # Wasserflächen
+        17: "black_wool", # Brückenplatten
     }
 
     columns = {}
@@ -98,13 +97,17 @@ def placeBlocksSimple(
     for (x,z), pointsInColumn in columns.items():
         lowestPoint = pointsInColumn[0]
         for point in pointsInColumn:
+            blockType = "light_gray_wool"
+            if point.c in classToBaseName:
+                blockType = classToBaseName[point.c]
+
             world.set_version_block(
                         int(point.x),
                         int(point.y),
                         int(point.z),
                         dimension,
                         (block_platform, block_version),
-                        Block("minecraft", classToBaseName[point.c], {}),
+                        Block("minecraft", blockType, {}),
                         block_entity,
                     )
             if point.y < lowestPoint.y:
