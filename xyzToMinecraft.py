@@ -35,13 +35,13 @@ def readXYZ():
     x_vals, y_vals, z_vals = [], [], []
 
     with open(
-        "XYZ/LIDAR_Punktwolke.xyz",
+        "XYZ/Bern_West_Ost.xyz",
         "r",
     ) as file:
         for i, line in enumerate(file):
             parts = line.strip().split()
-            if i > 500000:
-                break
+#             if i > 500000:
+#                 break
             point = Point(*parts)
             point.to_minecraft_coordinates()
 
@@ -86,13 +86,12 @@ def xyz_to_minecraft(
     block_version = (1, 21, 5)  # the version the blocks below are defined in
     block_entity = None
     classToBaseName = {
-        1: "light_gray_wool",
+        1: "light_gray_wool", # nicht klassifiziert
         2: "gray_wool", # Boden
-        5: "green_wool", # Vegetation
-        6: "granite", # Gebäudedächer
-        8: "light_gray_wool", # Modelkeypoints
-        9: "water", # Wasserflächen
-        17: "black_wool", # Brückenplatten
+        3: "green_wool", # Vegetation
+        6: "granite", # Gebäude
+        9: "water", # Wasser
+        17: "black_wool", # Brücken...
     }
 
     columns = {}
